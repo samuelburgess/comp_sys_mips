@@ -1,5 +1,12 @@
-// Author: Shikang Xu; ECE 353 TA
+//ECE 353 Lab 3
+//Samuel Burgess
+//Justin Forgue
+//Aric Pennington
+//Elias Phillips
+
+//For visual studio
 #define _CRT_SECURE_NO_WARNINGS
+
 // List the full names of ALL group members at the top of your code.
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,15 +21,21 @@
 char *progScanner(char *ptr);
 char *regNumberConverter(char *ptr);
 struct inst parser(char *ptr);
+enum opcode { ADD, ADDI, SUB, MULT, BEQ, LW, SW };
+int instCounter = 0;
 
-//type definition of struct type instruction
-typedef struct inst {
-	int opcode;
+//defining instuction struct
+struct inst {
+	int op;
 	int reg1;
 	int reg2;
 	int reg3;
 	int imm;
 };
+
+//defining instruction memory array of inst structs
+//not sure what size to make this yet
+struct inst instMemory[100];
 
 main(int argc, char *argv[]) {
 	int sim_mode = 0;//mode flag, 1 for single-cycle, 0 for batch
@@ -32,7 +45,7 @@ main(int argc, char *argv[]) {
 	long pgm_c = 0;//program counter
 	long sim_cycle = 0;//simulation cycle counter
 	//define your own counter for the usage of each pipeline stage here
-
+	int pipeCounter = 0;
 	int test_counter = 0;
 	FILE *input = NULL;
 	FILE *output = NULL;
@@ -59,28 +72,6 @@ main(int argc, char *argv[]) {
 		c = atoi(argv[4]);
 		input = fopen(argv[5], "r");
 		output = fopen(argv[6], "w");
-
-		printf("Argv 5 is %s\n", argv[5]);
-		char *linePtr = NULL;
-		char *correctedLinePtr = NULL;
-		
-		linePtr = malloc(200 * sizeof(char));
-		correctedLinePtr = malloc(200 * sizeof(char));
-
-		while (fgets(linePtr, 100, input)) {
-			//printf("String input is %s \n", linePtr);
-			//printf("Line pointer is point to char: %c\n", *linePtr);
-			//Send the input to prog scanner for corrections
-			correctedLinePtr = progScanner(linePtr);
-			correctedLinePtr = regNumberConverter(correctedLinePtr);
-			//Print the returned pointer
-			printf("\nCorrected line pointer is point to char: %s\n", correctedLinePtr);
-			//test parset function
-			struct inst temp;
-			temp = parser(correctedLinePtr);
-			printf("\nReturned struct: %d", temp.reg1);
-		}
-		fclose(input);
 	}
 
 	else {
@@ -104,39 +95,176 @@ main(int argc, char *argv[]) {
 	}
 
 	//start your code from here
+	//multiple line pointers are not necessary
+		//they are here to make sure that the line pointer is transferring through each function correctly
+		//printf("Argv 5 is %s\n", argv[5]);
+	char *linePtr = NULL;
+	char *correctedLinePtr = NULL;
+	char *secondCorrectedLinePtr = NULL;
+
+	//max line size should only be 100
+	linePtr = malloc(100 * sizeof(char));
+	correctedLinePtr = malloc(100 * sizeof(char));
+	secondCorrectedLinePtr = malloc(100 * sizeof(char));
+
+	while (fgets(linePtr, 100, input)) {
+		//printf("String input is %s \n", linePtr);
+		//printf("Line pointer is point to char: %c\n", *linePtr);
+		//Send the input to prog scanner for corrections
+		correctedLinePtr = progScanner(linePtr);
+		secondCorrectedLinePtr = regNumberConverter(correctedLinePtr);
+		//Print the returned pointer
+		//printf("Returned line pointer from regCon to main: %s", secondCorrectedLinePtr);
+		//test parset function
+		struct inst temp;
+		temp = parser(correctedLinePtr);
+		printf("Returned struct from parser (inst, reg1, reg2, reg3, imm): %d %d %d %d %d", temp.op, temp.reg1, temp.reg2, temp.reg3, temp.imm);
+		printf("\nValue from instruction memory (inst, reg1, reg2, reg3, imm): %d %d %d %d %d", instMemory[instCounter - 1].op, instMemory[instCounter - 1].reg1,
+			instMemory[instCounter - 1].reg2, instMemory[instCounter - 1].reg3, instMemory[instCounter - 1].imm);
+
+	}
+	fclose(input);
 }
 
-char *progScanner(char *ptr)
-{
+char *progScanner(char *ptr){
 	char *newLine = NULL;
 	//printf("\nLine pointer is point to char: %c", *ptr);
-	printf("\nString input inside prog scanner %s", ptr);
-	
+	//printf("\nLine input inside progScanner: %s", ptr);
+
 	//Do some stuff here to correct the input and then send back a pointer to new string
 	newLine = ptr;
 	return newLine;
 }
 
-char *regNumberConverter(char *ptr)
-{
+char *regNumberConverter(char *ptr){
 	char *newLine = NULL;
-	printf("\nString input inside regNumberConverter %s", ptr);
+	//printf("Line input inside regNumberConverter: %s", ptr);
 
 	//Do some stuff here to correct the input and then send back a pointer to new string
 	newLine = ptr;
 	return newLine;
 }
 
-struct inst parser(char *ptr)
-{
-	//test code to make sure ptr is received
-	printf("\nString input inside parser: %s", ptr);
+struct inst parser(char *ptr){
+	//Requires input like: add 3 4 5
 
-	//translate the ptr instructon line to a structure
-	//return the struct
-	//just some test code
+	//Uses output from regNumberConverter 
+	//instruction as an inst struct
+	//test code to make sure ptr is received
+	//printf("Line input inside parser: %s", ptr);
+	
 	struct inst temp;
-	temp.reg1 = 9;
+	temp.op = NULL;
+	temp.reg1 = NULL;
+	temp.reg2 = NULL;
+	temp.reg3 = NULL;
+	temp.imm = NULL;
+	//int val1;
+	//int val2;
+	//int val3;
+	//char *str = NULL;
+	//str = malloc(100 * sizeof(char));
+	//str = "sub";
+
+	//modified code from class website
+	int i;
+	char delimiters[] = " ";  
+	char ** instructionFields;
+
+	instructionFields = (char **)malloc(100 * sizeof(char *));
+	for (i = 0; i <= 4; i++)
+		*(instructionFields + i) = (char *)malloc(20 * sizeof(char *));
+
+	instructionFields[0] = strtok(ptr, delimiters);
+	instructionFields[1] = strtok(NULL, delimiters);
+	instructionFields[2] = strtok(NULL, delimiters);
+	instructionFields[3] = strtok(NULL, delimiters);
+	
+	//printf("inputString[]=%s\n", ptr);
+	printf("\n\nThe instruction line is: %s %s %s %s", instructionFields[0], instructionFields[1], 
+		instructionFields[2], instructionFields[3]);
+
+	//printf("The string is: %s", *str);
+	//printf("opcode %s", opcode);
+	//cant use switch case statements in c for strings, awesome...
+	if (strcmp(instructionFields[0], "add") == 0){
+		//format add rd = rs + rt
+		//printf("ADD");
+		temp.op = ADD;
+		temp.reg1 = atoi(instructionFields[1]);
+		temp.reg2 = atoi(instructionFields[2]);
+		temp.reg3 = atoi(instructionFields[3]);
+	}
+	else if (strcmp(instructionFields[0], "addi") == 0){
+		//format addi rt = rs + imm
+		//printf("ADDI");
+		if (atoi(instructionFields[3]) > 65535) {
+			printf("Immediate field contains a number that is too large,");
+			temp.imm = -1; //return -1 in the imm field to indicate and error for program to stop
+			return temp;
+		}
+
+		temp.op = ADDI;
+		temp.reg1 = atoi(instructionFields[1]);
+		temp.reg2 = atoi(instructionFields[2]);
+		temp.imm = atoi(instructionFields[3]);
+	}
+	else if (strcmp(instructionFields[0], "sub") == 0){
+		//printf("SUB");
+		//format sub rd = rs - rt
+		temp.op = SUB;
+		temp.reg1 = atoi(instructionFields[1]);
+		temp.reg2 = atoi(instructionFields[2]);
+		temp.reg3 = atoi(instructionFields[3]);
+	}
+	else if (strcmp(instructionFields[0], "mul") == 0){
+		//format mult rd = rs * rt
+		//printf("MULT");
+		temp.op = MULT;
+		temp.reg1 = atoi(instructionFields[1]);
+		temp.reg2 = atoi(instructionFields[2]);
+		temp.reg3 = atoi(instructionFields[3]);
+
+	}
+	else if (strcmp(instructionFields[0], "beq") == 0){
+		//if rs = rt goto imm
+		//format beq rs rt imm
+		//printf("BEQ");
+		if (atoi(instructionFields[3]) > 65535) {
+			printf("Immediate field contains a number that is too large,");
+			temp.imm = -1; //return -1 in the imm field to indicate and error for program to stop
+			return temp;
+		}
+
+		temp.op = BEQ;
+		temp.reg1 = atoi(instructionFields[1]);
+		temp.reg2 = atoi(instructionFields[2]);
+		temp.imm = atoi(instructionFields[3]);
+	}
+	else if (strcmp(instructionFields[0], "sw") == 0){
+		//store rt into rs + imm
+		//format sw rt imm rs
+		//printf("SW");
+		temp.op = SW;
+		temp.reg1 = atoi(instructionFields[1]);
+		temp.reg2 = atoi(instructionFields[3]);
+		temp.imm = atoi(instructionFields[2]);
+	}
+	else if (strcmp(instructionFields[0], "lw") == 0){
+		//load from rs + imm to rt
+		//format lw rt imm rs
+		//printf("LW");
+		temp.op = LW;
+		temp.reg1 = atoi(instructionFields[1]);
+		temp.reg2 = atoi(instructionFields[3]);
+		temp.imm = atoi(instructionFields[2]);
+	}
+	else{
+		printf("\nIllegal opcode: %s", instructionFields[0]);
+	}
+
+	instMemory[instCounter] = temp;
+	instCounter++;
+
 	return temp;
 }
-

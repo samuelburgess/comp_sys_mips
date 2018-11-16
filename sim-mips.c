@@ -18,7 +18,7 @@
 #define BATCH 0
 #define REG_NUM 32
 
-char *progScanner(char *ptr);
+char *progScanner(char *line);
 char *regNumberConverter(char *ptr);
 struct inst parser(char *ptr);
 enum opcode { ADD, ADDI, SUB, MULT, BEQ, LW, SW };
@@ -126,13 +126,45 @@ main(int argc, char *argv[]) {
 	fclose(input);
 }
 
-char *progScanner(char *ptr){
-	char *newLine = NULL;
-	//printf("\nLine pointer is point to char: %c", *ptr);
-	//printf("\nLine input inside progScanner: %s", ptr);
+char *progScanner(char *line){
 
-	//Do some stuff here to correct the input and then send back a pointer to new string
-	newLine = ptr;
+	char originalLine[100];
+	strcpy(originalLine, line);
+	char *correctLine[100];
+	char *segment;
+	int i = 0;
+
+	segment = strtok(originalLine," ,()");
+	while (segment != NULL){
+		correctLine[i++] = segment;
+		segment = strtok (NULL, " ,()");
+	}
+
+	char *opcode = correctLine[0];
+	int k;
+	int depth = 0;
+	if((strncmp(opcode, "sw", 2 ) == 0) || (strncmp(opcode, "lw", 2 )) == 0){
+		for (k = 0; line[k] != 0; k++){
+			depth += line[k] == '(';
+			depth -= line[k] == ')';
+		}
+		if (depth != 0) {
+			puts("Unmatched parentheses");
+			exit(0);
+		}
+
+	}
+
+	char *newLine;
+	newLine = malloc(100 * sizeof(char));
+	int j = 1;
+	strcpy (newLine, correctLine[0]);
+	while(j<i){
+		strcat(newLine, " ");
+		strcat(newLine, correctLine[j]);
+		j++;
+	}
+
 	return newLine;
 }
 
